@@ -1,24 +1,17 @@
 version: '3'
 services:
-  zipkin-server:
-    image: openzipkin/zipkin
-    container_name: sc-zipkin-server
+  rabbitmq:
+    image: rabbitmq:management-alpine
+    container_name: sc-rabbitmq
     restart: always
     volumes:
-      - ../data/zipkin-server/logs:/var/logs
+      - ../data/rabbitmq:/var/lib/rabbitmq/mnesia
     networks:
       - sc-net
     ports:
-      - 9411:9411
-    environment:
-      - RABBIT_ADDRESSES=rabbitmq:5672
-      - RABBIT_MQ_PORT=5672
-      - RABBIT_PASSWORD=guest
-      - RABBIT_USER=guest
-      - STORAGE_TYPE=elasticsearch
-      - ES_HOSTS=http://elasticsearch:9200
-    depends_on:
-      - rabbitmq
+      - 5672:5672
+      - 15672:15672
+    env_file: .env
 
   elasticsearch:
     image: elasticsearch:5.6-alpine
@@ -43,6 +36,26 @@ services:
     ports:
       - 9200:9200
       - 9300:9300
+
+  zipkin-server:
+    image: openzipkin/zipkin
+    container_name: sc-zipkin-server
+    restart: always
+    volumes:
+      - ../data/zipkin-server/logs:/var/logs
+    networks:
+      - sc-net
+    ports:
+      - 9411:9411
+    environment:
+      - RABBIT_ADDRESSES=rabbitmq:5672
+      - RABBIT_MQ_PORT=5672
+      - RABBIT_PASSWORD=guest
+      - RABBIT_USER=guest
+      - STORAGE_TYPE=elasticsearch
+      - ES_HOSTS=http://elasticsearch:9200
+    depends_on:
+      - rabbitmq
 
   skywalking-oap:
     image: wutang/skywalking-oap:6.1.0
@@ -99,3 +112,17 @@ services:
       - sc-net
     ports:
       - 3000:3000
+
+  sentinel-dashboard:
+    image: cike/sentinel-dashboard-docker:latest
+    container_name: sc-sentinel-dashboard
+    restart: always
+    networks:
+      - sc-net
+    ports:
+      - 8021:8021
+    env_file: .env
+
+networks:
+  sc-net:
+    external: false

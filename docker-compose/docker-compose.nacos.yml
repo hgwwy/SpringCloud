@@ -25,3 +25,7 @@ services:
     depends_on:
       - nacos
     restart: on-failure
+
+networks:
+  sc-net:
+    external: false
